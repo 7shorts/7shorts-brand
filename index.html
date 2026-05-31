@@ -46,31 +46,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- Password overlay (clientseitig — KEIN echter Schutz) ---------- */
-  #gate {
-    position: fixed; inset: 0; z-index: 1000;
-    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
-    display: flex; align-items: center; justify-content: center; padding: 24px;
-  }
-  #gate.hidden { display: none; }
-  .gate-card {
-    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
-    padding: 40px 36px; width: 100%; max-width: 380px; text-align: center;
-  }
-  .gate-card h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; }
-  .gate-card p { color: var(--ink-soft); font-size: .9rem; margin: 8px 0 22px; }
-  .gate-card input {
-    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-    font-size: 1rem; font-family: var(--font-body); margin-bottom: 12px; outline: none;
-  }
-  .gate-card input:focus { border-color: var(--brand); }
-  .gate-card button {
-    width: 100%; padding: 12px; border: 0; border-radius: 10px; background: var(--brand);
-    color: #fff; font-weight: 600; font-size: 1rem; cursor: pointer; font-family: var(--font-body);
-  }
-  .gate-card button:hover { background: var(--brand-dark); }
-  .gate-err { color: var(--todo); font-size: .85rem; min-height: 1.2em; margin-top: 8px; }
-
   /* ---------- Layout ---------- */
   .app { display: flex; min-height: 100vh; }
 
@@ -81,12 +56,6 @@
   }
   .nav-brand { padding: 22px 22px 14px; }
   .nav-brand img { max-width: 150px; height: auto; display: block; }
-  .nav-brand .logo-fallback {
-    font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; color: var(--brand);
-    letter-spacing: -.02em;
-  }
-  .nav-claim { font-size: .72rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
-
   .nav-items { list-style: none; padding: 8px 12px; flex: 1; }
   .nav-items li a {
     display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px;
@@ -175,37 +144,27 @@
     border-radius: 7px; padding: 5px 11px; font-size: .72rem; cursor: pointer; font-family: var(--font-body); font-weight: 600;
   }
 
-  .logo-preview { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 18px; background: var(--brand-tint); border-radius: var(--radius); }
+  .logo-preview { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 18px; background: var(--surface); border-radius: var(--radius); }
   .logo-preview img { max-height: 60px; }
 
   .note { font-size: .82rem; color: var(--ink-soft); border-left: 3px solid var(--border); padding-left: 12px; margin: 10px 0; }
 
-  /* mobile */
+  /* schmale Bildschirme — Sidebar bleibt linke Spalte, kein Dropdown/Hamburger */
+  .scrim { display: none; }
   @media (max-width: 880px) {
-    nav#sidebar {
-      position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform .25s; z-index: 200;
-      box-shadow: 0 0 40px rgba(0,0,0,.2);
-    }
-    nav#sidebar.open { transform: none; }
-    .menu-btn { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--border);
-      background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .85rem; }
-    .scrim { display: none; position: fixed; inset: 0; background: rgba(10,26,47,.4); z-index: 150; }
-    .scrim.show { display: block; }
+    nav#sidebar { width: 210px; }
+  }
+  @media (max-width: 500px) {
+    nav#sidebar { width: 160px; }
+    .nav-items li a { padding: 7px 8px; font-size: .82rem; gap: 6px; }
+    .nav-items li.sub a { padding-left: 18px; }
+    .nav-brand { padding: 14px 12px 10px; }
+    .nav-footer { padding: 12px 14px; }
   }
 </style>
 </head>
 <body>
 
-<!-- ============ PASSWORT-OVERLAY (clientseitig — siehe README/Playbook §8) ============ -->
-<div id="gate">
-  <div class="gate-card">
-    <h1>7shorts Brand Hub</h1>
-    <p data-de="Bitte Zugangswort eingeben." data-en="Please enter the access word.">Bitte Zugangswort eingeben.</p>
-    <input type="password" id="pw" autocomplete="off" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <button onclick="checkPw()" data-de="Eintreten" data-en="Enter">Eintreten</button>
-    <div class="gate-err" id="pwErr"></div>
-  </div>
-</div>
 
 <div class="scrim" id="scrim" onclick="toggleNav()"></div>
 
@@ -213,15 +172,12 @@
   <!-- ============ SIDEBAR ============ -->
   <nav id="sidebar">
     <div class="nav-brand">
-      <!-- Logo: liegt es lokal unter assets/logo/, hier referenzieren. Solange nicht im Repo:
-           Fallback-Schriftzug. (Asset-Beschaffung siehe README.) -->
-      <div class="logo-fallback">7shorts<span style="color:var(--ink)">.com</span></div>
-      <div class="nav-claim" data-de="Change your shorts every day" data-en="Change your shorts every day">Change your shorts every day</div>
+      <img src="assets/logo/7shorts-logo.svg" alt="7shorts — change your shorts every day">
     </div>
     <ul class="nav-items" id="navItems"></ul>
     <div class="nav-footer">
       <div data-de="Stand" data-en="Version">Stand</div>
-      <div class="ver" id="verLabel">v0.1.0 · 31.05.2026</div>
+      <div class="ver" id="verLabel">v0.6.0 · 31.05.2026</div>
     </div>
   </nav>
 
@@ -421,7 +377,7 @@
         <div class="card">
           <h3>Logo <span class="tag fact">Fakt</span></h3>
           <div class="logo-preview">
-            <div class="logo-fallback" style="font-size:2rem">7shorts<span style="color:var(--ink)">.com</span></div>
+            <img src="assets/logo/7shorts-logo.svg" alt="7shorts Logo">
           </div>
           <p class="note" data-de="Logo-Dateien (SVG mit Claim, Favicon SVG, PNG) liegen auf 7shorts.com. Zum Einbinden lokal herunterladen und unter assets/logo/ ablegen (siehe README §Assets)." data-en="Logo files (SVG with claim, favicon SVG, PNG) are on 7shorts.com. To embed, download locally and place under assets/logo/ (see README §Assets).">Logo-Dateien liegen auf 7shorts.com. Zum Einbinden lokal herunterladen und unter assets/logo/ ablegen (siehe README). <span class="tag todo">TODO</span></p>
         </div>
@@ -588,14 +544,6 @@ AUFGABE: Schreibe Texte, die so klingen, als kämen sie von 7shorts. Wenn dir Fa
     const txt = document.getElementById('promptBox').innerText.replace(/^Copy/, '').trim();
     navigator.clipboard.writeText(txt);
     const b = document.querySelector('.copy-btn'); const o=b.textContent; b.textContent='✓'; setTimeout(()=>b.textContent=o,1200);
-  }
-
-  /* ---- Passwort (clientseitig, KEIN echter Schutz — vor Auslieferung klären) ---- */
-  const ACCESS_WORD = '7shorts'; // TODO: ändern + echten Schutz davorschalten (siehe README)
-  function checkPw(){
-    const v = document.getElementById('pw').value.trim().toLowerCase();
-    if (v === ACCESS_WORD){ document.getElementById('gate').classList.add('hidden'); }
-    else { document.getElementById('pwErr').textContent = (lang==='de'?'Falsches Wort.':'Wrong word.'); }
   }
 
   buildNav();
