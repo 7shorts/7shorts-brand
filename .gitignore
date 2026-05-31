@@ -1,0 +1,13 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Lokale Server-/Build-Artefakte
+__pycache__/
+*.log
+
+# Große Originale, die nicht ins Repo sollen (bei Bedarf anpassen)
+# assets/**/full/

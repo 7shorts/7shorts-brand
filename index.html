@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7shorts — Brand Hub</title>
+<meta name="description" content="7shorts Brand Hub — die zentrale Single Source of Truth für die Marke 7shorts.">
+<meta name="theme-color" content="#0075BE">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Sometype+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     BRANDING TOKENS — hier zentral pflegen (siehe Brand.md §11)
+     ============================================================ */
+  :root {
+    --brand:        #0075BE;   /* Markenblau (theme-color von 7shorts.com) */
+    --brand-dark:   #005A93;
+    --brand-tint:   #E8F1F8;
+    --ink:          #0A1A2F;   /* Text */
+    --ink-soft:     #4A5A6B;
+    --bg:           #F4F7FA;   /* Seitenhintergrund */
+    --surface:      #FFFFFF;   /* Karten/Flächen */
+    --border:       #DCE4EC;
+    --ok:           #1F9D55;
+    --warn:         #C77700;
+    --todo:         #B23A48;
+    --maxw:         860px;
+    --nav-w:        264px;
+    --font-display: 'Archivo', system-ui, sans-serif;
+    --font-body:    'Archivo', system-ui, sans-serif;
+    --font-mono:    'Sometype Mono', ui-monospace, monospace;
+    --radius:       14px;
+    --shadow:       0 1px 3px rgba(10,26,47,.06), 0 8px 24px rgba(10,26,47,.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Password overlay (clientseitig — KEIN echter Schutz) ---------- */
+  #gate {
+    position: fixed; inset: 0; z-index: 1000;
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  #gate.hidden { display: none; }
+  .gate-card {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 40px 36px; width: 100%; max-width: 380px; text-align: center;
+  }
+  .gate-card h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; }
+  .gate-card p { color: var(--ink-soft); font-size: .9rem; margin: 8px 0 22px; }
+  .gate-card input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 1rem; font-family: var(--font-body); margin-bottom: 12px; outline: none;
+  }
+  .gate-card input:focus { border-color: var(--brand); }
+  .gate-card button {
+    width: 100%; padding: 12px; border: 0; border-radius: 10px; background: var(--brand);
+    color: #fff; font-weight: 600; font-size: 1rem; cursor: pointer; font-family: var(--font-body);
+  }
+  .gate-card button:hover { background: var(--brand-dark); }
+  .gate-err { color: var(--todo); font-size: .85rem; min-height: 1.2em; margin-top: 8px; }
+
+  /* ---------- Layout ---------- */
+  .app { display: flex; min-height: 100vh; }
+
+  nav#sidebar {
+    width: var(--nav-w); flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .nav-brand { padding: 22px 22px 14px; }
+  .nav-brand img { max-width: 150px; height: auto; display: block; }
+  .nav-brand .logo-fallback {
+    font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; color: var(--brand);
+    letter-spacing: -.02em;
+  }
+  .nav-claim { font-size: .72rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+
+  .nav-items { list-style: none; padding: 8px 12px; flex: 1; }
+  .nav-items li a {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px;
+    color: var(--ink-soft); text-decoration: none; font-size: .9rem; font-weight: 500;
+    transition: background .15s, color .15s;
+  }
+  .nav-items li a .num {
+    font-family: var(--font-mono); font-size: .72rem; opacity: .55; min-width: 18px;
+  }
+  .nav-items li a:hover { background: var(--brand-tint); color: var(--brand-dark); }
+  .nav-items li a.active { background: var(--brand); color: #fff; }
+  .nav-items li a.active .num { opacity: .8; }
+  .nav-items li.sub a { padding-left: 30px; font-size: .85rem; }
+
+  .nav-footer { padding: 16px 22px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--ink-soft); }
+  .nav-footer .ver { font-family: var(--font-mono); }
+
+  /* ---------- Topbar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50; background: rgba(244,247,250,.85);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 12px 28px;
+  }
+  .topbar .crumb { font-size: .8rem; color: var(--ink-soft); font-family: var(--font-mono); }
+  .lang-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .lang-toggle button {
+    border: 0; background: var(--surface); padding: 6px 14px; cursor: pointer; font-size: .8rem;
+    font-weight: 600; color: var(--ink-soft); font-family: var(--font-body);
+  }
+  .lang-toggle button.active { background: var(--brand); color: #fff; }
+  .menu-btn { display: none; }
+
+  main { flex: 1; min-width: 0; }
+  .content { max-width: var(--maxw); margin: 0 auto; padding: 40px 28px 100px; }
+
+  section.panel { display: none; animation: fade .25s ease; }
+  section.panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: .75rem; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--brand); margin-bottom: 6px;
+  }
+  h2.sec-title { font-family: var(--font-display); font-weight: 800; font-size: 2rem; letter-spacing: -.03em; line-height: 1.1; margin-bottom: 18px; }
+  h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 26px 0 10px; letter-spacing: -.01em; }
+  p { margin-bottom: 12px; }
+  .lead { font-size: 1.1rem; color: var(--ink-soft); margin-bottom: 22px; }
+  ul.bullets { margin: 0 0 14px 18px; }
+  ul.bullets li { margin-bottom: 6px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+  table.facts { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  table.facts td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.facts td:first-child { font-weight: 600; width: 38%; }
+
+  /* status tags */
+  .tag { display: inline-block; font-family: var(--font-mono); font-size: .68rem; font-weight: 500;
+    padding: 2px 7px; border-radius: 5px; letter-spacing: .04em; vertical-align: middle; margin-left: 6px; }
+  .tag.fact { background: #E6F5EC; color: var(--ok); }
+  .tag.prop { background: #FFF3E0; color: var(--warn); }
+  .tag.todo { background: #FBE7EA; color: var(--todo); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .chip { background: var(--brand-tint); color: var(--brand-dark); border-radius: 999px; padding: 5px 13px; font-size: .82rem; font-weight: 500; }
+
+  .swatch-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0; }
+  .swatch { text-align: center; font-size: .72rem; font-family: var(--font-mono); color: var(--ink-soft); }
+  .swatch .box { width: 76px; height: 56px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 6px; }
+
+  .pillar { border-left: 3px solid var(--brand); padding-left: 16px; margin-bottom: 18px; }
+  .pillar h4 { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+
+  pre.prompt {
+    background: var(--ink); color: #E8F1F8; border-radius: var(--radius); padding: 20px 22px;
+    font-family: var(--font-mono); font-size: .82rem; line-height: 1.6; overflow-x: auto;
+    white-space: pre-wrap; position: relative;
+  }
+  .copy-btn {
+    position: absolute; top: 12px; right: 12px; background: var(--brand); color: #fff; border: 0;
+    border-radius: 7px; padding: 5px 11px; font-size: .72rem; cursor: pointer; font-family: var(--font-body); font-weight: 600;
+  }
+
+  .logo-preview { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 18px; background: var(--brand-tint); border-radius: var(--radius); }
+  .logo-preview img { max-height: 60px; }
+
+  .note { font-size: .82rem; color: var(--ink-soft); border-left: 3px solid var(--border); padding-left: 12px; margin: 10px 0; }
+
+  /* mobile */
+  @media (max-width: 880px) {
+    nav#sidebar {
+      position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform .25s; z-index: 200;
+      box-shadow: 0 0 40px rgba(0,0,0,.2);
+    }
+    nav#sidebar.open { transform: none; }
+    .menu-btn { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--border);
+      background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: .85rem; }
+    .scrim { display: none; position: fixed; inset: 0; background: rgba(10,26,47,.4); z-index: 150; }
+    .scrim.show { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PASSWORT-OVERLAY (clientseitig — siehe README/Playbook §8) ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <h1>7shorts Brand Hub</h1>
+    <p data-de="Bitte Zugangswort eingeben." data-en="Please enter the access word.">Bitte Zugangswort eingeben.</p>
+    <input type="password" id="pw" autocomplete="off" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()" data-de="Eintreten" data-en="Enter">Eintreten</button>
+    <div class="gate-err" id="pwErr"></div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <nav id="sidebar">
+    <div class="nav-brand">
+      <!-- Logo: liegt es lokal unter assets/logo/, hier referenzieren. Solange nicht im Repo:
+           Fallback-Schriftzug. (Asset-Beschaffung siehe README.) -->
+      <div class="logo-fallback">7shorts<span style="color:var(--ink)">.com</span></div>
+      <div class="nav-claim" data-de="Change your shorts every day" data-en="Change your shorts every day">Change your shorts every day</div>
+    </div>
+    <ul class="nav-items" id="navItems"></ul>
+    <div class="nav-footer">
+      <div data-de="Stand" data-en="Version">Stand</div>
+      <div class="ver" id="verLabel">v0.1.0 · 31.05.2026</div>
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleNav()">☰ <span data-de="Menü" data-en="Menu">Menü</span></button>
+      <div class="crumb" id="crumb">01 / Identität</div>
+      <div class="lang-toggle">
+        <button id="btnDe" class="active" onclick="setLang('de')">DE</button>
+        <button id="btnEn" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- 1 IDENTITÄT -->
+      <section class="panel active" id="sec-identitaet">
+        <div class="eyebrow">01 — <span data-de="Identität" data-en="Identity">Identität</span></div>
+        <h2 class="sec-title" data-de="Wer 7shorts ist" data-en="Who 7shorts is">Wer 7shorts ist</h2>
+        <p class="lead" data-de="Der Online-Shop für Männer, die unkompliziert hochwertige Unterwäsche und Basics nachkaufen wollen — kuratierte Marken, praktische Multipacks, jeden Tag frisch." data-en="The online shop for men who want a hassle-free way to restock quality underwear and basics — curated brands, practical multipacks, fresh every day.">Der Online-Shop für Männer, die unkompliziert hochwertige Unterwäsche und Basics nachkaufen wollen — kuratierte Marken, praktische Multipacks, jeden Tag frisch. <span class="tag prop">Vorschlag</span></p>
+
+        <div class="card">
+          <h3 data-de="Markenversprechen" data-en="Brand promise">Markenversprechen <span class="tag fact">Fakt</span></h3>
+          <p data-de="„Change your shorts every day.“ — Jeden Tag frische Unterwäsche, ohne darüber nachzudenken. Einmal die passende Passform gefunden, einfach „auf Halde“ nachkaufen." data-en="“Change your shorts every day.” — Fresh underwear every day, without thinking about it. Once you've found your fit, just keep it stocked.">„Change your shorts every day.“ — Jeden Tag frische Unterwäsche, ohne darüber nachzudenken. Einmal die passende Passform gefunden, einfach „auf Halde“ nachkaufen.</p>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <h3 data-de="Mission" data-en="Mission">Mission <span class="tag prop">Vorschlag</span></h3>
+            <p data-de="Wir nehmen Männern die langweiligste Kaufentscheidung der Woche ab: guten Nachkauf so einfach machen, dass „nichts Frisches im Schrank“ nie wieder ein Thema ist." data-en="We take the most boring purchase decision off men's plates: making restocking good basics so easy that “nothing fresh in the drawer” is never an issue again.">Wir nehmen Männern die langweiligste Kaufentscheidung der Woche ab: guten Nachkauf so einfach machen, dass „nichts Frisches im Schrank“ nie wieder ein Thema ist.</p>
+          </div>
+          <div class="card">
+            <h3 data-de="Vision" data-en="Vision">Vision <span class="tag prop">Vorschlag</span></h3>
+            <p data-de="Vom kuratierten Marken-Reseller zur eigenständigen Bodywear-Marke — erst über Marktplätze und den eigenen Shop, perspektivisch mit eigener Produktlinie." data-en="From curated brand reseller to a bodywear brand in its own right — first via marketplaces and the own shop, eventually with an own product line.">Vom kuratierten Marken-Reseller zur eigenständigen Bodywear-Marke — erst über Marktplätze und den eigenen Shop, perspektivisch mit eigener Produktlinie.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 data-de="Positionierung" data-en="Positioning">Positionierung <span class="tag prop">Vorschlag</span></h3>
+          <p data-de="Wofür: Praktikabilität und Verlässlichkeit — Multipacks, schnelle/gratis Lieferung, bewährte Marken, kein Schnickschnack. Wogegen: gegen lieblosen Discounter-Kauf und gegen teure, kurzlebige Hype-Labels. 7shorts sitzt dazwischen: gute Qualität, kuratiert, alltagstauglich." data-en="For: practicality and reliability — multipacks, fast/free delivery, proven brands, no fuss. Against: soulless discounter buys and expensive, short-lived hype labels. 7shorts sits in between: good quality, curated, everyday-ready.">Wofür: Praktikabilität und Verlässlichkeit — Multipacks, schnelle/gratis Lieferung, bewährte Marken, kein Schnickschnack. Wogegen: gegen lieblosen Discounter-Kauf und gegen teure, kurzlebige Hype-Labels. 7shorts sitzt dazwischen: gute Qualität, kuratiert, alltagstauglich.</p>
+        </div>
+
+        <h3 data-de="Werte" data-en="Values">Werte <span class="tag prop">Vorschlag</span></h3>
+        <div class="grid2">
+          <div class="card"><strong data-de="Unkompliziert" data-en="Effortless">Unkompliziert</strong><p data-de="Kaufen soll Sekunden dauern, nicht Minuten." data-en="Buying should take seconds, not minutes.">Kaufen soll Sekunden dauern, nicht Minuten.</p></div>
+          <div class="card"><strong data-de="Verlässlich" data-en="Reliable">Verlässlich</strong><p data-de="Was du letzte Woche gekauft hast, gibt es nächste Woche wieder." data-en="What you bought last week is here again next week.">Was du letzte Woche gekauft hast, gibt es nächste Woche wieder.</p></div>
+          <div class="card"><strong data-de="Ehrlich" data-en="Honest">Ehrlich</strong><p data-de="Gute Materialien, faire Preise, keine leeren Versprechen." data-en="Good materials, fair prices, no empty promises.">Gute Materialien, faire Preise, keine leeren Versprechen.</p></div>
+          <div class="card"><strong data-de="Nahbar" data-en="Approachable">Nahbar</strong><p data-de="Wir reden mit Männern auf Augenhöhe — locker und direkt." data-en="We talk to men eye to eye — casual and direct.">Wir reden mit Männern auf Augenhöhe — locker und direkt.</p></div>
+        </div>
+      </section>
+
+      <!-- 2 UNTERNEHMEN -->
+      <section class="panel" id="sec-unternehmen">
+        <div class="eyebrow">02 — <span data-de="Unternehmen" data-en="Company">Unternehmen</span></div>
+        <h2 class="sec-title" data-de="Eckdaten & Geschichte" data-en="Facts & history">Eckdaten & Geschichte</h2>
+        <div class="card">
+          <table class="facts">
+            <tr><td data-de="Gegründet" data-en="Founded">Gegründet</td><td>2017, Berlin <span class="tag fact">Fakt</span></td></tr>
+            <tr><td data-de="Ursprungsidee" data-en="Original idea">Ursprungsidee</td><td data-de="Hochwertige Herren-Unterwäsche in praktischen Multipacks." data-en="Quality men's underwear in practical multipacks.">Hochwertige Herren-Unterwäsche in praktischen Multipacks. <span class="tag fact">Fakt</span></td></tr>
+            <tr><td data-de="Geschäftsmodell" data-en="Business model">Geschäftsmodell</td><td data-de="Online-Handel, reines B2C." data-en="Online retail, pure B2C.">Online-Handel, reines B2C. <span class="tag fact">Fakt</span></td></tr>
+            <tr><td data-de="Kanäle" data-en="Channels">Kanäle</td><td data-de="Amazon Marktplatz (Schwerpunkt) + eigener Shop 7shorts.com." data-en="Amazon marketplace (focus) + own shop 7shorts.com.">Amazon Marktplatz (Schwerpunkt) + eigener Shop 7shorts.com. <span class="tag fact">Fakt</span></td></tr>
+            <tr><td data-de="Shop-System" data-en="Shop system">Shop-System</td><td data-de="Aktuell JTL-Shop; Migration zu Shopify geplant." data-en="Currently JTL-Shop; migration to Shopify planned.">Aktuell JTL-Shop; Migration zu Shopify geplant. <span class="tag fact">Fakt</span></td></tr>
+            <tr><td data-de="Service" data-en="Service">Service</td><td data-de="Versandkostenfrei in DE, schnelle Lieferung, Kauf auf Rechnung/Vorkasse." data-en="Free shipping within Germany, fast delivery, purchase on invoice/prepayment.">Versandkostenfrei in DE, schnelle Lieferung, Kauf auf Rechnung/Vorkasse. <span class="tag fact">Fakt</span></td></tr>
+          </table>
+        </div>
+        <p class="note" data-de="Offen: Rechtsform, Mitarbeitendenzahl, Lager/Logistik, Meilensteine mit Jahreszahlen." data-en="Open: legal form, headcount, warehouse/logistics, milestones with years.">Offen: Rechtsform, Mitarbeitendenzahl, Lager/Logistik, Meilensteine mit Jahreszahlen. <span class="tag todo">TODO</span></p>
+      </section>
+
+      <!-- 3 ZIELGRUPPEN -->
+      <section class="panel" id="sec-zielgruppen">
+        <div class="eyebrow">03 — <span data-de="Zielgruppen" data-en="Audiences">Zielgruppen</span></div>
+        <h2 class="sec-title" data-de="Käufer-Personas" data-en="Buyer personas">Käufer-Personas</h2>
+        <p class="lead" data-de="B2C-Shopper-Segmente statt B2B-ICP. Aktuell Vorschläge auf Basis von Sortiment und Tonalität — durch echte Daten (Amazon-Reviews, Bestellhistorie, Retouren) zu validieren." data-en="B2C shopper segments instead of B2B ICP. Currently proposals based on assortment and tone — to be validated with real data (Amazon reviews, order history, returns).">B2C-Shopper-Segmente statt B2B-ICP. Aktuell Vorschläge — durch echte Daten zu validieren. <span class="tag prop">Vorschlag</span></p>
+        <div class="card">
+          <h3>„Der Nachkäufer“ <span class="tag prop">Vorschlag</span></h3>
+          <ul class="bullets">
+            <li data-de="Wer: Mann, 30–55, berufstätig, wenig Lust auf Shopping." data-en="Who: man, 30–55, employed, little interest in shopping.">Wer: Mann, 30–55, berufstätig, wenig Lust auf Shopping.</li>
+            <li data-de="Schmerz: Schublade leert sich, Nachkauf nervt, im Laden nie die richtige Größe." data-en="Pain: drawer runs empty, restocking is annoying, never the right size in store.">Schmerz: Schublade leert sich, Nachkauf nervt, im Laden nie die richtige Größe.</li>
+            <li data-de="Auslöser: es wird eng; gute Erfahrung mit letzter Bestellung." data-en="Trigger: running low; good experience with last order.">Auslöser: es wird eng; gute Erfahrung mit letzter Bestellung.</li>
+            <li data-de="Einwand: „Bekomme ich genau dasselbe wieder?“" data-en="Objection: “Will I get exactly the same again?”">Einwand: „Bekomme ich genau dasselbe wieder?“</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>„Der Praktiker“ <span class="tag prop">Vorschlag</span></h3>
+          <ul class="bullets">
+            <li data-de="Wer: Mann, 25–45, effizienzgetrieben, kauft online was geht." data-en="Who: man, 25–45, efficiency-driven, buys online where possible.">Wer: Mann, 25–45, effizienzgetrieben, kauft online was geht.</li>
+            <li data-de="Schmerz: will nicht ständig nachdenken; mag Vorratskauf." data-en="Pain: doesn't want to keep thinking about it; likes buying in bulk.">Schmerz: will nicht ständig nachdenken; mag Vorratskauf.</li>
+            <li data-de="Auslöser: Multipack-Angebot, gratis Versand, schnelle Lieferung." data-en="Trigger: multipack offer, free shipping, fast delivery.">Auslöser: Multipack-Angebot, gratis Versand, schnelle Lieferung.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>„Der Beschenker“ <span class="tag prop">Vorschlag</span></h3>
+          <ul class="bullets">
+            <li data-de="Wer: Partner:in/Familie, kauft für einen Mann." data-en="Who: partner/family, buying for a man.">Wer: Partner:in/Familie, kauft für einen Mann.</li>
+            <li data-de="Schmerz: unsicher bei Größe/Geschmack." data-en="Pain: unsure about size/taste.">Schmerz: unsicher bei Größe/Geschmack.</li>
+            <li data-de="Auslöser: Marken-Vertrauen (CK, Tommy, Puma), einfache Retoure." data-en="Trigger: brand trust (CK, Tommy, Puma), easy returns.">Auslöser: Marken-Vertrauen (CK, Tommy, Puma), einfache Retoure.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 4 CUSTOMER JOURNEY -->
+      <section class="panel" id="sec-journey">
+        <div class="eyebrow">04 — <span data-de="Customer Journey" data-en="Customer Journey">Customer Journey</span></div>
+        <h2 class="sec-title" data-de="Vom ersten Kontakt bis zum Wiederkauf" data-en="From first contact to repeat purchase">Vom ersten Kontakt bis zum Wiederkauf</h2>
+        <div class="card">
+          <h3 data-de="Heute: über Amazon" data-en="Today: via Amazon">Heute: über Amazon <span class="tag prop">Vorschlag</span></h3>
+          <ul class="bullets">
+            <li data-de="Awareness — Suche nach „Boxershorts Herren Multipack“ o. Ä." data-en="Awareness — search for “men's boxer multipack” etc.">Awareness — Suche nach „Boxershorts Herren Multipack“ o. Ä.</li>
+            <li data-de="Consideration — Listing, Bewertungen, Marke (CK/Puma) überzeugen." data-en="Consideration — listing, reviews, brand (CK/Puma) convince.">Consideration — Listing, Bewertungen, Marke überzeugen.</li>
+            <li data-de="Kauf — Prime-Versand, Vertrauen in Amazon-Abwicklung." data-en="Purchase — Prime shipping, trust in Amazon handling.">Kauf — Prime-Versand, Vertrauen in Amazon-Abwicklung.</li>
+            <li data-de="Retention — Wiederkauf bei nächster Lücke." data-en="Retention — repurchase at next gap.">Retention — Wiederkauf bei nächster Lücke.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 data-de="Ziel: eigener Shop (Shopify)" data-en="Goal: own shop (Shopify)">Ziel: eigener Shop (Shopify) <span class="tag prop">Vorschlag</span></h3>
+          <p class="note" data-de="Strategisches Zukunftsbild nach Migration JTL → Shopify: direkte Kundenbeziehung statt Marktplatz-Abhängigkeit." data-en="Strategic future picture after JTL → Shopify migration: direct customer relationship instead of marketplace dependency.">Strategisches Zukunftsbild nach Migration JTL → Shopify: direkte Kundenbeziehung statt Marktplatz-Abhängigkeit.</p>
+          <ul class="bullets">
+            <li data-de="Awareness — eigener Content/Ads, Markenbekanntheit „7shorts“." data-en="Awareness — own content/ads, brand awareness “7shorts”.">Awareness — eigener Content/Ads, Markenbekanntheit „7shorts“.</li>
+            <li data-de="Consideration — kuratiertes Sortiment, Multipack-Logik, Service sichtbar." data-en="Consideration — curated assortment, multipack logic, service visible.">Consideration — kuratiertes Sortiment, Multipack-Logik, Service sichtbar.</li>
+            <li data-de="Kauf — reibungsloser Shopify-Checkout, Rechnung, gratis Versand." data-en="Purchase — smooth Shopify checkout, invoice, free shipping.">Kauf — reibungsloser Shopify-Checkout, Rechnung, gratis Versand.</li>
+            <li data-de="Retention — Nachkauf-Erinnerung, „meine Passform“, Multipack-Abo denkbar." data-en="Retention — restock reminder, “my fit”, multipack subscription conceivable.">Retention — Nachkauf-Erinnerung, „meine Passform“, Multipack-Abo denkbar.</li>
+            <li data-de="Loyalty — Direktbeziehung, Newsletter, Eigenmarke an Stammkunden." data-en="Loyalty — direct relationship, newsletter, own brand to regulars.">Loyalty — Direktbeziehung, Newsletter, Eigenmarke an Stammkunden.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 5 PRODUKTE -->
+      <section class="panel" id="sec-produkte">
+        <div class="eyebrow">05 — <span data-de="Produkte" data-en="Products">Produkte</span></div>
+        <h2 class="sec-title" data-de="Sortiment & Marken" data-en="Assortment & brands">Sortiment & Marken</h2>
+        <div class="card">
+          <h3 data-de="Kategorien" data-en="Categories">Kategorien <span class="tag fact">Fakt</span></h3>
+          <div class="chips">
+            <span class="chip">Slips</span><span class="chip">Shorts / Boxershorts</span><span class="chip">Lange Unterhosen</span>
+            <span class="chip">Multipacks</span><span class="chip" data-de="Socken" data-en="Socks">Socken</span><span class="chip">Swimwear</span>
+            <span class="chip">Shirts / Tanktops</span><span class="chip">Home-/Sleepwear</span><span class="chip" data-de="Damen-Slips" data-en="Women's briefs">Damen-Slips</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-de="Geführte Marken (Reseller-Portfolio)" data-en="Carried brands (reseller portfolio)">Geführte Marken (Reseller-Portfolio) <span class="tag fact">Fakt</span></h3>
+          <div class="chips">
+            <span class="chip">Ammann</span><span class="chip">bruno banani</span><span class="chip">Calvin Klein</span>
+            <span class="chip">FILA</span><span class="chip">Head</span><span class="chip">Jack &amp; Jones</span>
+            <span class="chip">Joop!</span><span class="chip">Lacoste</span><span class="chip">Levis</span>
+            <span class="chip">Mey</span><span class="chip">Puma</span><span class="chip">Tommy Hilfiger</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-de="Nutzenversprechen je Kategorie" data-en="Value promise per category">Nutzenversprechen je Kategorie <span class="tag prop">Vorschlag</span></h3>
+          <ul class="bullets">
+            <li data-de="Multipacks: „Einmal kaufen, eine Woche frisch.“" data-en="Multipacks: “Buy once, a week fresh.”">Multipacks: „Einmal kaufen, eine Woche frisch.“</li>
+            <li data-de="Marken-Bodywear: „Bewährte Marken, kuratiert — keine Recherche nötig.“" data-en="Brand bodywear: “Proven brands, curated — no research needed.”">Marken-Bodywear: „Bewährte Marken, kuratiert — keine Recherche nötig.“</li>
+            <li data-de="Socken: „7 Tage die Woche gut am Start.“" data-en="Socks: “Ready to go 7 days a week.”">Socken: „7 Tage die Woche gut am Start.“</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 6 EIGENMARKE -->
+      <section class="panel" id="sec-eigenmarke">
+        <div class="eyebrow">06 — <span data-de="Eigenmarke" data-en="Own brand">Eigenmarke</span></div>
+        <h2 class="sec-title" data-de="Eigenmarken-Roadmap" data-en="Own-brand roadmap">Eigenmarken-Roadmap</h2>
+        <p class="lead" data-de="Aktuell keine eigenen Produkte. Eine Eigenmarke ist perspektivisch geplant — die Stufen unten sind ein Vorschlag und strategisch von 7shorts zu entscheiden." data-en="Currently no own products. An own brand is planned for the future — the stages below are a proposal and to be decided strategically by 7shorts.">Aktuell keine eigenen Produkte. Eine Eigenmarke ist perspektivisch geplant. <span class="tag fact">Fakt</span></p>
+        <div class="card">
+          <ul class="bullets">
+            <li data-de="Stufe 0 (heute): Reiner Reseller bekannter Marken über Amazon + eigener Shop." data-en="Stage 0 (today): pure reseller of known brands via Amazon + own shop.">Stufe 0 (heute): Reiner Reseller bekannter Marken über Amazon + eigener Shop. <span class="tag fact">Fakt</span></li>
+            <li data-de="Stufe 1: Eigenmarke für Commodity-Basics (z. B. Multipack-Boxershorts „7shorts“)." data-en="Stage 1: own brand for commodity basics (e.g. multipack boxers “7shorts”).">Stufe 1: Eigenmarke für Commodity-Basics (z. B. Multipack-Boxershorts „7shorts“). <span class="tag prop">Vorschlag</span></li>
+            <li data-de="Stufe 2: Eigenmarke verbreitert (Socken, Shirts), eigene Passform-/Materiallogik." data-en="Stage 2: own brand broadens (socks, shirts), own fit/material logic.">Stufe 2: Eigenmarke verbreitert (Socken, Shirts), eigene Passform-/Materiallogik. <span class="tag prop">Vorschlag</span></li>
+            <li data-de="Stufe 3: 7shorts als Marke steht für sich; Reseller-Sortiment ergänzt, nicht trägt." data-en="Stage 3: 7shorts as a brand stands on its own; reseller assortment complements, doesn't carry.">Stufe 3: 7shorts als Marke steht für sich; Reseller-Sortiment ergänzt, nicht trägt. <span class="tag prop">Vorschlag</span></li>
+          </ul>
+        </div>
+        <p class="note" data-de="Zu klären: Zeithorizont, Start-Kategorie, Eigenfertigung vs. Private Label, Positionierung ggü. den geführten Premium-Marken." data-en="To clarify: timeline, launch category, own manufacturing vs. private label, positioning vs. carried premium brands.">Zu klären: Zeithorizont, Start-Kategorie, Eigenfertigung vs. Private Label, Positionierung ggü. den Premium-Marken. <span class="tag todo">TODO</span></p>
+      </section>
+
+      <!-- 7 MARKTPLATZ / KANÄLE -->
+      <section class="panel" id="sec-kanaele">
+        <div class="eyebrow">07 — <span data-de="Marktplatz & Kanäle" data-en="Marketplace & channels">Marktplatz & Kanäle</span></div>
+        <h2 class="sec-title" data-de="Vertriebskanäle" data-en="Sales channels">Vertriebskanäle</h2>
+        <p class="lead" data-de="Ersetzt den B2B-Sales-Hub. Hier: Rolle der Kanäle und Content-Bausteine." data-en="Replaces the B2B sales hub. Here: role of the channels and content building blocks.">Ersetzt den B2B-Sales-Hub.</p>
+        <div class="grid2">
+          <div class="card">
+            <h3>Amazon <span class="tag fact">Fakt</span></h3>
+            <p data-de="Aktueller Schwerpunkt. Reichweite & Neukunden, Preiswettbewerb, wenig Markenkontrolle." data-en="Current focus. Reach & new customers, price competition, little brand control.">Aktueller Schwerpunkt. Reichweite & Neukunden, Preiswettbewerb, wenig Markenkontrolle.</p>
+          </div>
+          <div class="card">
+            <h3 data-de="Eigener Shop" data-en="Own shop">Eigener Shop <span class="tag fact">Fakt</span></h3>
+            <p data-de="7shorts.com (JTL → Shopify). Marge, Markenerlebnis, Direktbeziehung, Datenhoheit — strategisch wichtiger werdend." data-en="7shorts.com (JTL → Shopify). Margin, brand experience, direct relationship, data ownership — becoming strategically more important.">7shorts.com (JTL → Shopify). Marge, Markenerlebnis, Direktbeziehung, Datenhoheit.</p>
+          </div>
+        </div>
+        <p class="note" data-de="TODO: Weitere Marktplätze (eBay, Otto, Kaufland, Zalando)? Amazon A+/Keyword-/Bildstandards und Shop-Texte-Vorlagen dokumentieren." data-en="TODO: more marketplaces (eBay, Otto, Kaufland, Zalando)? Document Amazon A+/keyword/image standards and shop text templates.">TODO: Weitere Marktplätze? Amazon A+/Keyword-/Bildstandards und Shop-Textvorlagen dokumentieren. <span class="tag todo">TODO</span></p>
+      </section>
+
+      <!-- 8 VISUELLES -->
+      <section class="panel" id="sec-visuelles">
+        <div class="eyebrow">08 — <span data-de="Visuelles" data-en="Visuals">Visuelles</span></div>
+        <h2 class="sec-title" data-de="Logo, Farben, Schrift" data-en="Logo, colors, type">Logo, Farben, Schrift</h2>
+        <div class="card">
+          <h3>Logo <span class="tag fact">Fakt</span></h3>
+          <div class="logo-preview">
+            <div class="logo-fallback" style="font-size:2rem">7shorts<span style="color:var(--ink)">.com</span></div>
+          </div>
+          <p class="note" data-de="Logo-Dateien (SVG mit Claim, Favicon SVG, PNG) liegen auf 7shorts.com. Zum Einbinden lokal herunterladen und unter assets/logo/ ablegen (siehe README §Assets)." data-en="Logo files (SVG with claim, favicon SVG, PNG) are on 7shorts.com. To embed, download locally and place under assets/logo/ (see README §Assets).">Logo-Dateien liegen auf 7shorts.com. Zum Einbinden lokal herunterladen und unter assets/logo/ ablegen (siehe README). <span class="tag todo">TODO</span></p>
+        </div>
+        <div class="card">
+          <h3 data-de="Farben" data-en="Colors">Farben</h3>
+          <div class="swatch-row">
+            <div class="swatch"><div class="box" style="background:#0075BE"></div>#0075BE <span class="tag fact">Fakt</span></div>
+            <div class="swatch"><div class="box" style="background:#005A93"></div>#005A93</div>
+            <div class="swatch"><div class="box" style="background:#0A1A2F"></div>#0A1A2F</div>
+            <div class="swatch"><div class="box" style="background:#E8F1F8"></div>#E8F1F8</div>
+            <div class="swatch"><div class="box" style="background:#FFFFFF"></div>#FFFFFF</div>
+          </div>
+          <p class="note" data-de="Primärblau #0075BE ist verifiziert. Sekundär-/Akzentfarben sind ein Vorschlag — offizielle Werte von 7shorts bestätigen." data-en="Primary blue #0075BE is verified. Secondary/accent colors are a proposal — confirm official values with 7shorts.">Primärblau #0075BE ist verifiziert. Übrige sind Vorschlag. <span class="tag prop">Vorschlag</span></p>
+        </div>
+        <div class="card">
+          <h3 data-de="Schrift" data-en="Typography">Schrift <span class="tag todo">TODO</span></h3>
+          <p data-de="Brand-Font noch zu bestätigen. Aktuell im Hub: Archivo (Display & Body) als Platzhalter." data-en="Brand font to be confirmed. Currently in the hub: Archivo (display & body) as placeholder.">Brand-Font noch zu bestätigen. Aktuell im Hub: Archivo als Platzhalter.</p>
+        </div>
+      </section>
+
+      <!-- 9 TONE OF VOICE -->
+      <section class="panel" id="sec-tov">
+        <div class="eyebrow">09 — <span data-de="Tone of Voice" data-en="Tone of Voice">Tone of Voice</span></div>
+        <h2 class="sec-title" data-de="Wie 7shorts klingt" data-en="How 7shorts sounds">Wie 7shorts klingt</h2>
+        <div class="card">
+          <h3 data-de="Drei Adjektive" data-en="Three adjectives">Drei Adjektive <span class="tag prop">Vorschlag</span></h3>
+          <div class="chips">
+            <span class="chip" data-de="Locker" data-en="Casual">Locker</span>
+            <span class="chip" data-de="Direkt" data-en="Direct">Direkt</span>
+            <span class="chip" data-de="Selbstbewusst" data-en="Confident">Selbstbewusst</span>
+          </div>
+          <p data-de="Konsequent Du. Männer-fokussiert, alltagsnah, kein Fashion-Jargon." data-en="Always informal “you” (Du). Men-focused, down-to-earth, no fashion jargon.">Konsequent Du. Männer-fokussiert, alltagsnah, kein Fashion-Jargon. <span class="tag fact">Fakt</span></p>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Dos <span class="tag prop">Vorschlag</span></h3>
+            <ul class="bullets">
+              <li data-de="Kurze, klare Sätze." data-en="Short, clear sentences.">Kurze, klare Sätze.</li>
+              <li data-de="Humor ja, aber nie auf Kosten der Klarheit." data-en="Humor yes, but never at the cost of clarity.">Humor ja, aber nie auf Kosten der Klarheit.</li>
+              <li data-de="Nutzen vor Feature." data-en="Benefit before feature.">Nutzen vor Feature.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Don'ts <span class="tag prop">Vorschlag</span></h3>
+            <ul class="bullets">
+              <li data-de="Kein gestelztes Marketing-Deutsch." data-en="No stilted marketing-speak.">Kein gestelztes Marketing-Deutsch.</li>
+              <li data-de="Keine Superlativ-Schlacht." data-en="No battle of superlatives.">Keine Superlativ-Schlacht.</li>
+              <li data-de="Keine leeren Versprechen ohne Beleg." data-en="No empty promises without proof.">Keine leeren Versprechen ohne Beleg.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-de="Golden Samples (echte Website-Zitate)" data-en="Golden samples (real website quotes)">Golden Samples <span class="tag fact">Fakt</span></h3>
+          <ul class="bullets">
+            <li>„Change your shorts every day.“</li>
+            <li data-de="„Einmal die perfekte Unterhose gefunden? Dann einfach auf Halde da haben.“" data-en="“Found your perfect pair? Just keep it stocked.”">„Einmal die perfekte Unterhose gefunden? Dann einfach auf Halde da haben.“</li>
+            <li data-de="„7 Tage die Woche im grünen Bereich.“" data-en="“In the green zone 7 days a week.”">„7 Tage die Woche im grünen Bereich.“</li>
+            <li data-de="„Egal was du heute vor hast — machs mit Style & Komfort.“" data-en="“Whatever you're up to today — do it with style & comfort.”">„Egal was du heute vor hast — machs mit Style & Komfort.“</li>
+          </ul>
+        </div>
+        <p class="note" data-de="TODO: Code-Switching-Liste (immer DE / immer EN), Kanal-Tonalität (Amazon vs. Shop vs. Newsletter)." data-en="TODO: code-switching list (always DE / always EN), channel tonality (Amazon vs. shop vs. newsletter).">TODO: Code-Switching-Liste, Kanal-Tonalität. <span class="tag todo">TODO</span></p>
+      </section>
+
+      <!-- 10 MESSAGING -->
+      <section class="panel" id="sec-messaging">
+        <div class="eyebrow">10 — <span data-de="Messaging" data-en="Messaging">Messaging</span></div>
+        <h2 class="sec-title" data-de="Botschaften & Pillars" data-en="Messages & pillars">Botschaften & Pillars</h2>
+        <p class="lead" data-de="Erarbeitet nach dem Messaging-Positioning-Skill. Aktuell Vorschlag — ersetzt keine echte Messaging-Session mit 7shorts; Pillars noch ohne harte Proof Points." data-en="Built with the messaging-positioning skill. Currently a proposal — does not replace a real messaging session with 7shorts; pillars still lack hard proof points.">Erarbeitet nach dem Messaging-Skill. Aktuell Vorschlag. <span class="tag prop">Vorschlag</span></p>
+        <div class="card">
+          <h3 data-de="Kernbotschaft" data-en="Core message">Kernbotschaft</h3>
+          <p data-de="Gute Unterwäsche nachkaufen, ohne nachzudenken — kuratierte Marken, praktische Multipacks, schnell und gratis geliefert." data-en="Restock good underwear without thinking — curated brands, practical multipacks, fast and free delivery.">Gute Unterwäsche nachkaufen, ohne nachzudenken — kuratierte Marken, praktische Multipacks, schnell und gratis geliefert.</p>
+        </div>
+        <div class="card">
+          <h3 data-de="Nutzen-Säulen (3 Pillars)" data-en="Value pillars (3)">Nutzen-Säulen (3 Pillars)</h3>
+          <div class="pillar"><h4 data-de="1 — Immer frisch nachkaufbar" data-en="1 — Always restockable">1 — Immer frisch nachkaufbar</h4><p data-de="Deine Passform ist immer verfügbar; Multipacks für den Vorrat." data-en="Your fit is always available; multipacks for stocking up.">Deine Passform ist immer verfügbar; Multipacks für den Vorrat.</p></div>
+          <div class="pillar"><h4 data-de="2 — Kuratiert statt überfordert" data-en="2 — Curated, not overwhelmed">2 — Kuratiert statt überfordert</h4><p data-de="Bewährte Marken, vorausgewählt; keine Recherche nötig." data-en="Proven brands, pre-selected; no research needed.">Bewährte Marken, vorausgewählt; keine Recherche nötig.</p></div>
+          <div class="pillar"><h4 data-de="3 — Unkomplizierter Service" data-en="3 — Hassle-free service">3 — Unkomplizierter Service</h4><p data-de="Gratis Versand DE, schnelle Lieferung, Kauf auf Rechnung." data-en="Free shipping in DE, fast delivery, purchase on invoice.">Gratis Versand DE, schnelle Lieferung, Kauf auf Rechnung.</p></div>
+        </div>
+        <p class="note" data-de="TODO: Pillars mit Proof Points härten (Reviews, Lieferzeiten, Retourenquote). „Only we…“-Statement mit 7shorts schärfen." data-en="TODO: harden pillars with proof points (reviews, delivery times, return rate). Sharpen the “only we…” statement with 7shorts.">TODO: Pillars mit Proof Points härten; „Only we…“-Statement schärfen. <span class="tag todo">TODO</span></p>
+      </section>
+
+      <!-- 11 LLM / AI -->
+      <section class="panel" id="sec-llm">
+        <div class="eyebrow">11 — <span data-de="LLM / AI" data-en="LLM / AI">LLM / AI</span></div>
+        <h2 class="sec-title" data-de="On-Brand-System-Prompt" data-en="On-brand system prompt">On-Brand-System-Prompt</h2>
+        <p class="lead" data-de="Diesen Prompt in ChatGPT/Claude einsetzen, um „on-brand“ für 7shorts zu schreiben. Vorläufig, solange Sektionen oben Vorschlag/TODO sind." data-en="Use this prompt in ChatGPT/Claude to write “on-brand” for 7shorts. Provisional while sections above are proposal/TODO.">Diesen Prompt in ChatGPT/Claude einsetzen, um „on-brand“ zu schreiben. <span class="tag prop">Vorschlag</span></p>
+        <pre class="prompt" id="promptBox"><button class="copy-btn" onclick="copyPrompt()">Copy</button>Du schreibst für die Marke 7shorts, einen Online-Händler für Herren-Unterwäsche und Basics (B2C, Hauptkanal Amazon, eigener Shop 7shorts.com).
+
+MARKE: 7shorts. Claim: „Change your shorts every day.“
+ANGEBOT: kuratierte Marken (Calvin Klein, Puma, Tommy Hilfiger u. a.) in praktischen Multipacks; Socken, Swimwear, Shirts. Versandkostenfrei in DE, schnelle Lieferung, Kauf auf Rechnung. Aktuell keine Eigenmarke (geplant).
+
+TONALITÄT: locker, direkt, selbstbewusst. Immer Du. Männer-fokussiert, alltagsnah, kein Fashion-Jargon. Kurze klare Sätze. Nutzen vor Feature. Kein gestelztes Marketing-Deutsch, keine Superlativ-Schlacht, keine leeren Versprechen.
+
+KERNBOTSCHAFTEN: (1) Immer frisch nachkaufbar — deine Passform ist immer da. (2) Kuratiert statt überfordert — bewährte Marken, vorausgewählt. (3) Unkomplizierter Service — gratis Versand, schnell, Rechnung.
+
+AUFGABE: Schreibe Texte, die so klingen, als kämen sie von 7shorts. Wenn dir Fakten fehlen, frage nach oder markiere die Lücke — erfinde keine Markendetails.</pre>
+        <p class="note" data-de="EN-Version folgt, sobald die Inhalte final sind (Struktur ist vorbereitet)." data-en="EN version follows once content is final (structure is prepared).">EN-Version folgt, sobald Inhalte final sind. <span class="tag todo">TODO</span></p>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  /* ============ NAVIGATION DATA ============ */
+  const SECTIONS = [
+    { id:'sec-identitaet', num:'01', de:'Identität',          en:'Identity' },
+    { id:'sec-unternehmen',num:'02', de:'Unternehmen',        en:'Company' },
+    { id:'sec-zielgruppen',num:'03', de:'Zielgruppen',        en:'Audiences' },
+    { id:'sec-journey',    num:'04', de:'Customer Journey',   en:'Customer Journey' },
+    { id:'sec-produkte',   num:'05', de:'Produkte',           en:'Products' },
+    { id:'sec-eigenmarke', num:'06', de:'Eigenmarke',         en:'Own brand' },
+    { id:'sec-kanaele',    num:'07', de:'Marktplatz & Kanäle',en:'Marketplace & channels' },
+    { id:'sec-visuelles',  num:'08', de:'Visuelles',          en:'Visuals' },
+    { id:'sec-tov',        num:'09', de:'Tone of Voice',      en:'Tone of Voice' },
+    { id:'sec-messaging',  num:'10', de:'Messaging',          en:'Messaging' },
+    { id:'sec-llm',        num:'11', de:'LLM / AI',           en:'LLM / AI' },
+  ];
+
+  let lang = 'de';
+
+  function buildNav(){
+    const ul = document.getElementById('navItems');
+    ul.innerHTML = SECTIONS.map(s =>
+      `<li><a href="#" data-id="${s.id}" onclick="go('${s.id}');return false;">
+        <span class="num">${s.num}</span><span data-de="${s.de}" data-en="${s.en}">${s.de}</span></a></li>`
+    ).join('');
+    applyLang();
+  }
+
+  function go(id){
+    document.querySelectorAll('section.panel').forEach(p => p.classList.toggle('active', p.id===id));
+    document.querySelectorAll('#navItems a').forEach(a => a.classList.toggle('active', a.dataset.id===id));
+    const s = SECTIONS.find(x=>x.id===id);
+    document.getElementById('crumb').textContent = s.num + ' / ' + (lang==='de'?s.de:s.en);
+    window.scrollTo({top:0, behavior:'smooth'});
+    if (window.innerWidth <= 880) toggleNav(true);
+  }
+
+  function setLang(l){
+    lang = l;
+    document.documentElement.lang = l;
+    document.getElementById('btnDe').classList.toggle('active', l==='de');
+    document.getElementById('btnEn').classList.toggle('active', l==='en');
+    applyLang();
+    const active = document.querySelector('#navItems a.active');
+    if (active){ const s = SECTIONS.find(x=>x.id===active.dataset.id); document.getElementById('crumb').textContent = s.num+' / '+(l==='de'?s.de:s.en); }
+  }
+
+  function applyLang(){
+    document.querySelectorAll('[data-de]').forEach(el => {
+      const t = el.getAttribute('data-'+lang);
+      if (t !== null && t !== undefined) el.textContent = t;
+    });
+  }
+
+  function toggleNav(forceClose){
+    const sb = document.getElementById('sidebar'); const sc = document.getElementById('scrim');
+    const open = forceClose ? false : !sb.classList.contains('open');
+    sb.classList.toggle('open', open); sc.classList.toggle('show', open);
+  }
+
+  function copyPrompt(){
+    const txt = document.getElementById('promptBox').innerText.replace(/^Copy/, '').trim();
+    navigator.clipboard.writeText(txt);
+    const b = document.querySelector('.copy-btn'); const o=b.textContent; b.textContent='✓'; setTimeout(()=>b.textContent=o,1200);
+  }
+
+  /* ---- Passwort (clientseitig, KEIN echter Schutz — vor Auslieferung klären) ---- */
+  const ACCESS_WORD = '7shorts'; // TODO: ändern + echten Schutz davorschalten (siehe README)
+  function checkPw(){
+    const v = document.getElementById('pw').value.trim().toLowerCase();
+    if (v === ACCESS_WORD){ document.getElementById('gate').classList.add('hidden'); }
+    else { document.getElementById('pwErr').textContent = (lang==='de'?'Falsches Wort.':'Wrong word.'); }
+  }
+
+  buildNav();
+  go('sec-identitaet');
+</script>
+</body>
+</html>
